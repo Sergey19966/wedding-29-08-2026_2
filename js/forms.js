@@ -1,134 +1,157 @@
-const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbx4b1dZ5s4rRku7KfzRX1oY9iFRiEuZ-J2OzdSie01wIklQfcO0QUT4u8H9mSQKg96s/exec";
+const SCRIPT_URL =
+"https://script.google.com/macros/s/AKfycbx4b1dZ5s4rRku7KfzRX1oY9iFRiEuZ-J2OzdSie01wIklQfcO0QUT4u8H9mSQKg96s/exec";
 
-console.log("forms.js loaded");
+window.addEventListener("load", function () {
 
-document.addEventListener("DOMContentLoaded", () => {
-
-    document.querySelectorAll("form").forEach(form => {
-
-        form.addEventListener("submit", async function (e) {
-
-            e.preventDefault();
-
-            const submit = form.querySelector('button[type="submit"],input[type="submit"]');
-
-            if (submit) {
-                submit.disabled = true;
-                submit.dataset.old = submit.innerHTML || submit.value;
-
-                if (submit.tagName === "BUTTON")
-                    submit.innerHTML = "Отправка...";
-                else
-                    submit.value = "Отправка...";
-            }
-
-            const formData = {};
-
-            form.querySelectorAll("input,select,textarea").forEach(el => {
-
-                if (!el.name) return;
-
-                switch (el.type) {
-
-                    case "checkbox":
-                        formData[el.name] = el.checked;
-                        break;
-
-                    case "radio":
-                        if (el.checked)
-                            formData[el.name] = el.value;
-                        break;
-
-                    default:
-                        formData[el.name] = el.value;
-                }
-
-            });
-
-            try {
-
-                const response = await fetch(SCRIPT_URL, {
-
-                    method: "POST",
-
-                    headers: {
-                        "Content-Type": "application/json"
-                    },
-
-                    body: JSON.stringify(formData)
-
-                });
-
-                if (!response.ok)
-                    throw new Error();
-
-                showSuccess(form);
-
-                form.reset();
-
-            }
-            catch (err) {
-
-                showError(form);
-
-            }
-
-            if (submit) {
-
-                submit.disabled = false;
-
-                if (submit.tagName === "BUTTON")
-                    submit.innerHTML = submit.dataset.old;
-
-                else
-                    submit.value = submit.dataset.old;
-
-            }
-
-        });
-
-    });
+    setTimeout(initForms, 1500);
 
 });
 
+function initForms() {
 
-function showSuccess(form){
+    const forms = document.querySelectorAll("form");
 
-    let div=form.querySelector(".form-result");
+    forms.forEach(form => {
 
-    if(!div){
+        form.addEventListener("submit", submitHandler, true);
 
-        div=document.createElement("div");
-
-        div.className="form-result";
-
-        form.appendChild(div);
-
-    }
-
-    div.style.color="#228B22";
-
-    div.innerHTML="Спасибо! Мы получили Ваш ответ.";
+    });
 
 }
 
+async function submitHandler(e) {
 
-function showError(form){
+    e.preventDefault();
+    e.stopPropagation();
+    e.stopImmediatePropagation();
 
-    let div=form.querySelector(".form-result");
+    const form = e.target;
 
-    if(!div){
+    const submitBtn =
+        form.querySelector('button[type="submit"], input[type="submit"]');
 
-        div=document.createElement("div");
+    if (submitBtn) {
 
-        div.className="form-result";
+        submitBtn.disabled = true;
 
-        form.appendChild(div);
+        if (submitBtn.querySelector(".t-btnflex__text")) {
+
+            submitBtn.querySelector(".t-btnflex__text").innerText =
+                "Отправка...";
+
+        } else {
+
+            submitBtn.innerText = "Отправка...";
+
+        }
+    }
+
+    const data = {};
+
+    form.querySelectorAll("input, textarea, select").forEach(el => {
+
+        if (el.type === "submit") return;
+        if (el.type === "hidden") return;
+
+        let key =
+            el.getAttribute("data-tilda-req") ||
+            el.getAttribute("name") ||
+            el.placeholder ||
+            el.id;
+
+        if (!key) return;
+
+        if (el.type === "radio") {
+
+            if (el.checked) {
+                data[key] = el.value;
+            }
+
+        } else if (el.type === "checkbox") {
+
+            data[key] = el.checked;
+
+        } else {
+
+            data[key] = el.value;
+        }
+
+    });
+
+    data.date = new Date().toLocaleString();
+
+    try {
+
+        const response = await fetch(SCRIPT_URL, {
+
+            method: "POST",
+
+            headers: {
+                "Content-Type": "application/json"
+            },
+
+            body: JSON.stringify(data)
+
+        });
+
+        if (!response.ok)
+            throw new Error();
+
+        showSuccess(form);
+
+        form.reset();
+
+    }
+    catch (err) {
+
+        showError(form);
+
+        console.error(err);
 
     }
 
-    div.style.color="red";
+    if (submitBtn) {
 
-    div.innerHTML="Ошибка отправки. Попробуйте ещё раз.";
+        submitBtn.disabled = false;
 
+        const txt = submitBtn.querySelector(".t-btnflex__text");
+
+        if (txt) {
+
+            txt.innerText = "Отправить";
+
+        } else {
+
+            submitBtn.innerText = "Отправить";
+
+        }
+    }
+}
+
+function showSuccess(form) {
+
+    let box = form.querySelector(".js-successbox");
+
+    if (box) {
+
+        box.style.display = "block";
+
+        box.innerHTML =
+            "Спасибо! Мы получили ваш ответ.";
+
+        const inputs =
+            form.querySelector(".t-form__inputsbox");
+
+        if (inputs)
+            inputs.style.display = "none";
+
+        return;
+    }
+
+    alert("Спасибо! Мы получили ваш ответ.");
+}
+
+function showError(form) {
+
+    alert("Ошибка отправки. Попробуйте ещё раз.");
 }
