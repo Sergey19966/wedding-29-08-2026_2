@@ -1,5 +1,7 @@
 const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbx4b1dZ5s4rRku7KfzRX1oY9iFRiEuZ-J2OzdSie01wIklQfcO0QUT4u8H9mSQKg96s/exec";
 
+console.log("forms.js loaded");
+
 document.addEventListener("DOMContentLoaded", () => {
 
     document.querySelectorAll("form").forEach(form => {
